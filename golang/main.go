@@ -14,23 +14,39 @@ import (
 )
 
 func main() {
-	startTime := time.Now()
-	defer getTimeElapsed(startTime)
-	// readFileSequential("..\\temp_files\\exemplo.txt")
-	// readFileRoutine("..\\temp_files\\exemplo.txt")
-	var downloadableContentUrlPath, filePath, fileType string
-	var totalPartitions int
-	var useConcurrency bool
-	downloadableContentUrlPath = "https://www.sample-videos.com/csv/Sample-Spreadsheet-500000-rows.csv"
-	useConcurrency = false
-	if useConcurrency {
-		fileType = "concurrent"
-	} else {
-		fileType = "sequence"
-	}
-	filePath = fmt.Sprintf("..\\temp_files\\golang\\free_dummy_data_%v.csv", fileType)
-	totalPartitions = 28 // care about website server limit
-	RunDownload(downloadableContentUrlPath, filePath, totalPartitions, useConcurrency)
+	c := make(chan int)
+	var value int
+	go func() {
+		fmt.Println("Entrou")
+		fmt.Println("Recebeu 1")
+		c <- 1
+		fmt.Println("Recebeu 2")
+		c <- 1
+	}()
+	fmt.Println("Print canal")
+	fmt.Println(c)
+	fmt.Println("Print 1")
+	fmt.Println(<-c)
+	value = <-c
+	fmt.Println("Print 2")
+	fmt.Println(value)
+	// startTime := time.Now()
+	// defer getTimeElapsed(startTime)
+	// // readFileSequential("..\\temp_files\\exemplo.txt")
+	// // readFileRoutine("..\\temp_files\\exemplo.txt")
+	// var downloadableContentUrlPath, filePath, fileType string
+	// var totalPartitions int
+	// var useConcurrency bool
+	// downloadableContentUrlPath = "https://www.sample-videos.com/csv/Sample-Spreadsheet-500000-rows.csv"
+	// useConcurrency = false
+	// if useConcurrency {
+	// 	fileType = "concurrent"
+	// } else {
+	// 	fileType = "sequence"
+	// }
+	// filePath = fmt.Sprintf("..\\temp_files\\golang\\free_dummy_data_%v.csv", fileType)
+	// totalPartitions = 28 // care about website server limit
+	// RunDownload(downloadableContentUrlPath, filePath, totalPartitions, useConcurrency)
 }
 
 func getTimeElapsed(startTime time.Time) float64 {
