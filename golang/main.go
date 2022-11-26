@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,22 +15,24 @@ import (
 )
 
 func main() {
-	c := make(chan int)
-	var value int
-	go func() {
-		fmt.Println("Entrou")
-		fmt.Println("Recebeu 1")
-		c <- 1
-		fmt.Println("Recebeu 2")
-		c <- 1
-	}()
-	fmt.Println("Print canal")
-	fmt.Println(c)
-	fmt.Println("Print 1")
-	fmt.Println(<-c)
-	value = <-c
-	fmt.Println("Print 2")
-	fmt.Println(value)
+	fmt.Println(runtime.NumGoroutine())
+	// c := make(chan int)
+	// var value int
+	// go func() {
+	// 	fmt.Println("Entrou")
+	// 	fmt.Println("Recebeu 1")
+	// 	c <- 1
+	// 	fmt.Println("Recebeu 2")
+	// 	c <- 1
+	// }()
+	// fmt.Println("Print canal")
+	// fmt.Println(c)
+	// fmt.Println("Print 1")
+	// fmt.Println(<-c)
+	// value = <-c
+	// fmt.Println("Print 2")
+	// fmt.Println(value)
+
 	// startTime := time.Now()
 	// defer getTimeElapsed(startTime)
 	// // readFileSequential("..\\temp_files\\exemplo.txt")
@@ -45,8 +48,13 @@ func main() {
 	// 	fileType = "sequence"
 	// }
 	// filePath = fmt.Sprintf("..\\temp_files\\golang\\free_dummy_data_%v.csv", fileType)
-	// totalPartitions = 28 // care about website server limit
-	// RunDownload(downloadableContentUrlPath, filePath, totalPartitions, useConcurrency)
+	// totalPartitions = 30 // care about website server limit
+	// for i := 0; i < 10; i++ {
+	// 	fmt.Println("Run: ", i+1)
+	// 	startTime = time.Now()
+	// 	RunDownload(downloadableContentUrlPath, filePath, totalPartitions, useConcurrency)
+	// 	getTimeElapsed(startTime)
+	// }
 }
 
 func getTimeElapsed(startTime time.Time) float64 {
@@ -218,7 +226,7 @@ func (download Download) downloadPartition(index int, content [2]int) error {
 	if response.StatusCode > 299 {
 		return fmt.Errorf("can't process, response is %v", response.StatusCode)
 	}
-	fmt.Printf("Downloaded %v bytes for partition %v\n", response.Header.Get("Content-Length"), index+1)
+	// fmt.Printf("Downloaded %v bytes for partition %v\n", response.Header.Get("Content-Length"), index+1)
 	bytes, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return err

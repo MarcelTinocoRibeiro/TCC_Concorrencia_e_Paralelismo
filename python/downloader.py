@@ -20,13 +20,21 @@ class Download():
         print(f'Size is {size} bytes.')
         each_size = float(size) / self.total_partitions
         print(f'Each size is {float(each_size)} bytes.')
-        r = requests.get(self.url, stream=True)
+        response = requests.get(self.url, stream=True)
         with open('test.txt', '+w', encoding='utf-8') as f:
-            for index, chunk in enumerate(r.iter_content(chunk_size=int(each_size))):
+            for index, chunk in enumerate(response.iter_content(chunk_size=int(each_size))):
                 print(f' Working on chunk {index+1} of {self.total_partitions+1}')
+                print(type(chunk))
                 if chunk:
-                    f.write(str(chunk))
+                    try:
+                        for line in str(chunk).split('\n'):
+                            f.write(line + '\n')
+                    except Exception as e:
+                        print(e)
                     f.flush()
+            # f.writelines(response.iter_content(chunk_size=int(each_size)))
+            # f.flush()
+                    
         # partitions = []
         # for index in range(self.total_partitions):
         #     if index == 0:
