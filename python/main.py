@@ -12,8 +12,8 @@ total_partitions = 30 # care about website server limit
 
 d = Download(url, file_path, total_partitions)
 # d.do()
-d.do_sequencial_divided()
-# d.do_threading()
+# d.do_sequencial_divided()
+d.do_threading_divided()
 ##### Download #####
 ##### Word Finder #####
 # file_path = '..\\temp_files\\exemplo_maior.txt'
