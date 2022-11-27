@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	fmt.Println(runtime.NumGoroutine())
+	// fmt.Println(runtime.NumGoroutine())
 	// c := make(chan int)
 	// var value int
 	// go func() {
@@ -33,10 +33,10 @@ func main() {
 	// fmt.Println("Print 2")
 	// fmt.Println(value)
 
-	// startTime := time.Now()
-	// defer getTimeElapsed(startTime)
-	// // readFileSequential("..\\temp_files\\exemplo.txt")
-	// // readFileRoutine("..\\temp_files\\exemplo.txt")
+	startTime := time.Now()
+	defer getTimeElapsed(startTime)
+	// readFileSequential("..\\temp_files\\exemplo_maior.txt")
+	readFileRoutine("..\\temp_files\\exemplo_maior.txt")
 	// var downloadableContentUrlPath, filePath, fileType string
 	// var totalPartitions int
 	// var useConcurrency bool
@@ -87,11 +87,12 @@ func readFileSequential(fileName string) {
 			lines = append(lines, line)
 		}
 	}
-	defer fmt.Println(lines)
+	// defer fmt.Println(lines)
 }
 
 func readFileRoutine(fileName string) {
 	var wg sync.WaitGroup // Added a wait group to keep track of Goroutines
+	var mutex sync.Mutex  // Added a mutex to restrict the multiple access to file content causing error
 	file, err := os.Open(fileName)
 	if err != nil {
 		panic(err)
@@ -101,12 +102,16 @@ func readFileRoutine(fileName string) {
 	for scan.Scan() {
 		wg.Add(1)   // Add 1 on WaitGroup for each Goroutine ("for" loop runs count)
 		go func() { // Declaring anonymous goroutine
+			fmt.Println(runtime.NumGoroutine())
+			mutex.Lock()
 			line := scan.Text()
 			result := readString(line, "junior")
 			if result != "" {
 				// fmt.Println(result)
 				lines = append(lines, line)
 			}
+			mutex.Unlock()
+			// time.Sleep(time.Millisecond * 4)
 			wg.Done() // Telling WaitGroup that one Goroutine ended
 		}() // No need to pass parameters if all the work are in the loop
 	}
@@ -124,9 +129,9 @@ type Download struct {
 func RunDownload(url string, filePath string, totalPartitions int, useConcurrency bool) {
 	os.Remove(filePath) // Remove file if it already exists
 	download := Download{
-		// Provide the URL to access and download,
+		// URL to access and download,
 		Url: url,
-		// Provide the file path with extension, example: example.csv
+		// File path with extension, example: example.csv
 		FilePath: filePath,
 		// Number of partitions/connections to make to the server
 		TotalPartitions: totalPartitions,

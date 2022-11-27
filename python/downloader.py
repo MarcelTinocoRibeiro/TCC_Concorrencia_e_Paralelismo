@@ -1,7 +1,29 @@
+import threading
+import datetime
 import requests
 import time
 import os
 
+def clean_rewrite_file():
+    # Reescrevendo o arquivo para que fique mais legível
+    while True:
+        try:
+            start_rewrite = datetime.datetime.now().time()
+            with open('test_temp.txt', 'r', encoding='utf-8') as ff:
+                with open('test.txt', '+w', encoding='utf-8') as fw:
+                        line = ff.readline()
+                        while line != '':
+                            if line != '' and line != '\n':
+                                fw.write(f'{line}')
+                                fw.flush()
+                            line = ff.readline()
+            os.remove('test_temp.txt')
+            finish_rewrite = datetime.datetime.now().time()
+            print(f'start_rewrite = {start_rewrite}')
+            print(f'finish_rewrite = {finish_rewrite}')
+            return
+        except Exception as e:
+            print(e)
 class Download():
     def __init__(self, url, file_path, total_partitions):
         self.url = url
@@ -9,22 +31,24 @@ class Download():
         self.total_partitions = total_partitions
     
     def get_new_request(self, method, header):
+        # stream=True permite baixar o arquivo por partes assim que estiver disponível
+        # sem a necessidade de aguardar todo o arquivo ser baixado
         response = requests.request(method, self.url, headers=header, stream=True)
         return response
 
     def do(self):
-        response = self.get_new_request('HEAD', header={"User-Agent":"Python Downloader"})
+        header = {"User-Agent":"Python Downloader"}
+        response = requests.request('HEAD', self.url, headers=header, stream=True)
+        # response = self.get_new_request('GET', header={"User-Agent":"Python Downloader"})
         if response.status_code > 299:
             raise Exception(f"Error: {response.status_code} {response.reason}")
         size = response.headers["Content-Length"]
-        print(f'Size is {size} bytes.')
+        print(f'Download file size is {size} bytes.')
         each_size = float(size) / self.total_partitions
         print(f'Each size is {float(each_size)} bytes.')
-        response = requests.get(self.url, stream=True)
-        with open('test.txt', '+w', encoding='utf-8') as f:
-            for index, chunk in enumerate(response.iter_content(chunk_size=int(each_size))):
-                print(f' Working on chunk {index+1} of {self.total_partitions+1}')
-                print(type(chunk))
+        with open('test_temp.txt', '+w', encoding='utf-8') as f:
+            for index, chunk in enumerate(response.iter_content(chunk_size=int(each_size), decode_unicode=True)):
+                print(f' Working on chunk {index+1} of {self.total_partitions}')
                 if chunk:
                     try:
                         for line in str(chunk).split('\n'):
@@ -32,21 +56,23 @@ class Download():
                     except Exception as e:
                         print(e)
                     f.flush()
-            # f.writelines(response.iter_content(chunk_size=int(each_size)))
-            # f.flush()
-                    
-        # partitions = []
-        # for index in range(self.total_partitions):
-        #     if index == 0:
-        #         partitions.append((index, float(each_size)-1))
-        #     else:    
-        #         partitions.append((index*float(each_size), index*float(each_size) + float(each_size) - 1))
-        # print(partitions)
-        # for index, content in enumerate(partitions):
-        #     content_start = content[0]
-        #     content_end = content[1]
-        #     self.download_partition(index, content_start, content_end)
-        # self.merge_files()
+        ## Reescrevendo o arquivo para que fique mais legível
+        start_rewrite = datetime.datetime.now().time()
+        with open('test_temp.txt', 'r', encoding='utf-8') as ff:
+            with open('test.txt', '+w', encoding='utf-8') as fw:
+                    line = ff.readline()
+                    while line != '':
+                        if line != '' and line != '\n':
+                            fw.write(f'{line}')
+                            fw.flush()
+                        line = ff.readline()
+        os.remove('test_temp.txt')
+        finish_rewrite = datetime.datetime.now().time()
+        print(f'start_rewrite = {start_rewrite}')
+        print(f'finish_rewrite = {finish_rewrite}')
+
+
+
 
     def download_partition(self, index, content_start, content_end):
         response = self.get_new_request('GET', header={"Range":f'bytes={content_start}-{content_end}'})
@@ -69,3 +95,89 @@ class Download():
                     os.remove(temp_file_path)
                 except Exception as e:
                     print(e)
+
+
+
+
+
+    def do_threading(self):
+            header = {"User-Agent":"Python Downloader"}
+            response = requests.request('HEAD', self.url, headers=header, stream=True)
+            if response.status_code > 299:
+                raise Exception(f"Error: {response.status_code} {response.reason}")
+            size = int(response.headers["Content-Length"])
+            print(f'Download file size is {size} bytes.')
+            each_size = int(size / self.total_partitions)
+            print(f'Each size is {each_size} bytes.')
+            with open('test_temp.txt', '+w', encoding='utf-8') as f:
+                threads = []
+                for index, chunk in enumerate(response.iter_content(chunk_size=int(each_size), decode_unicode=True)):
+                    print(f' Working on chunk {index+1} of {self.total_partitions}')
+                    thread = threading.Thread(name=f'Chunk Writer Thread {index+1}', target=thread_write, args=(chunk, f))
+                    thread.start()
+                    threads.append(thread)
+            for thread in threads:
+                thread.join()
+                print(thread.name)
+            ## Reescrevendo o arquivo para que fique mais legível
+            start_rewrite = datetime.datetime.now().time()
+            with open('test_temp.txt', 'r', encoding='utf-8') as ff:
+                with open('test.txt', '+w', encoding='utf-8') as fw:
+                        line = ff.readline()
+                        while line != '':
+                            if line != '' and line != '\n':
+                                fw.write(f'{line}')
+                                fw.flush()
+                            line = ff.readline()
+            os.remove('test_temp.txt')
+            finish_rewrite = datetime.datetime.now().time()
+            print(f'start_rewrite = {start_rewrite}')
+            print(f'finish_rewrite = {finish_rewrite}')
+
+    def do_sequencial_divided(self):
+        header = {"User-Agent":"Python Downloader"}
+        response = requests.request('HEAD', self.url, headers=header, stream=True)
+        # response = self.get_new_request('GET', header={"User-Agent":"Python Downloader"})
+        if response.status_code > 299:
+            raise Exception(f"Error: {response.status_code} {response.reason}")
+        size = int(response.headers["Content-Length"])
+        print(f'Download file size is {size} bytes.')
+        each_size = int(size / self.total_partitions)
+        print(f'Each size is {each_size} bytes.')
+        for index in range(self.total_partitions):
+                start_byte = 0 if index == 0 else index * each_size + 1
+                end_byte = index * each_size + each_size if index < self.total_partitions - 1 else size - 1
+                header = {'Range':f'bytes={int(start_byte)}-{int(end_byte)}'}
+                response = requests.request('GET', self.url, headers=header, stream=True)
+                print(f' Working on chunk {index+1} of {self.total_partitions}')
+                with open(f'../temp_files/python/python_partition_{index}.tmp', '+w', encoding='utf-8') as f:
+                    for line in response.iter_content(chunk_size=each_size, decode_unicode=True):
+                            f.writelines(line.split('\n'))
+                            f.flush()
+        ## Reescrevendo o arquivo para que fique mais legível
+        start_rewrite = datetime.datetime.now().time()
+        os.remove(self.file_path)
+        for index in range(self.total_partitions):
+            temp_file = f'../temp_files/python/python_partition_{index}.tmp'
+            with open(temp_file, 'r', encoding='utf-8') as ff:
+                with open(self.file_path, '+a', encoding='utf-8') as fw:
+                        line = ff.readline()
+                        while line != '':
+                            # if line != '' and line != '\n':
+                            # line = line.replace('\r\n', '\n', -1)
+                            fw.write(f'{line}')
+                            fw.flush()
+                            line = ff.readline()
+            os.remove(temp_file)
+            finish_rewrite = datetime.datetime.now().time()
+            print(f'start_rewrite = {start_rewrite}')
+            print(f'finish_rewrite = {finish_rewrite}')
+
+
+
+
+def thread_write(chunk, to_write):
+    line = str(chunk)
+    if line != '' and line != '\n':
+        to_write.write(f'{line}')
+        to_write.flush()
