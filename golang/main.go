@@ -35,8 +35,8 @@ func main() {
 
 	startTime := time.Now()
 	defer getTimeElapsed(startTime)
-	// readFileSequential("..\\temp_files\\exemplo_maior.txt")
-	readFileRoutine("..\\temp_files\\exemplo_maior.txt")
+	// readFileSequential("..\\temp_files\\exemplo_maior.txt", "junior")
+	readFileRoutine("..\\temp_files\\exemplo_maior.txt", "junior")
 	// var downloadableContentUrlPath, filePath, fileType string
 	// var totalPartitions int
 	// var useConcurrency bool
@@ -71,7 +71,7 @@ func readString(str string, match string) string {
 	return ""
 }
 
-func readFileSequential(fileName string) {
+func readFileSequential(fileName string, word string) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		panic(err)
@@ -81,7 +81,7 @@ func readFileSequential(fileName string) {
 
 	for scan.Scan() {
 		line := scan.Text()
-		result := readString(line, "junior")
+		result := readString(line, word)
 		if result != "" {
 			// fmt.Println(result)
 			lines = append(lines, line)
@@ -90,7 +90,7 @@ func readFileSequential(fileName string) {
 	// defer fmt.Println(lines)
 }
 
-func readFileRoutine(fileName string) {
+func readFileRoutine(fileName string, word string) {
 	var wg sync.WaitGroup // Added a wait group to keep track of Goroutines
 	var mutex sync.Mutex  // Added a mutex to restrict the multiple access to file content causing error
 	file, err := os.Open(fileName)
@@ -105,7 +105,7 @@ func readFileRoutine(fileName string) {
 			fmt.Println(runtime.NumGoroutine())
 			mutex.Lock()
 			line := scan.Text()
-			result := readString(line, "junior")
+			result := readString(line, word)
 			if result != "" {
 				// fmt.Println(result)
 				lines = append(lines, line)
@@ -131,7 +131,7 @@ func RunDownload(url string, filePath string, totalPartitions int, useConcurrenc
 	download := Download{
 		// URL to access and download,
 		Url: url,
-		// File path with extension, example: example.csv
+		// File path with extension, example: path/example.csv
 		FilePath: filePath,
 		// Number of partitions/connections to make to the server
 		TotalPartitions: totalPartitions,
