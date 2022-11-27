@@ -163,8 +163,6 @@ class Download():
                 with open(self.file_path, '+a', encoding='utf-8') as fw:
                         line = ff.readline()
                         while line != '':
-                            # if line != '' and line != '\n':
-                            # line = line.replace('\r\n', '\n', -1)
                             fw.write(f'{line}')
                             fw.flush()
                             line = ff.readline()
