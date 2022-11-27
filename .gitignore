@@ -1,0 +1,3 @@
+temp_files/golang/*
+temp_files/python/*
+__pycache__
