@@ -23,7 +23,8 @@ class WordFinder():
         # um retorno da Thread executada
         # self.matches.append(line) = line if word in line else ''
         if word in line:
-            self.matches.append(f'thread {index} got line: {line.strip()}')
+            # print(f'thread {index} got line: {line.strip()}')
+            self.matches[index] = line
 
     def set_word(self, word):
         self.word = word
@@ -36,19 +37,30 @@ class WordFinder():
 
     def word_finder_with_threads(self, lines, max_threads=30):
         try:
+            line_counter = times = 0
             # Definimos uma lista do mesmo tamanho que a quantidade de linhas percorridas
             self.matches = ['' for x in lines]
-            for index, line in enumerate(lines):
-                thread = threading.Thread(name=f'thread {index} working on line {line}', target=self.find_word_threading, args=[line, self.word, index])
-                self.threads.append(thread)
-                self.threads_started_time.append(datetime.datetime.now().time())
-                thread.start()
-            # for index, thread in enumerate(self.threads):
-            #     thread.join()
+            while line_counter < len(lines):
+                print(f'line_counter = {line_counter} // times = {times}')
+                count = line_counter
+                for index, line in enumerate(lines[count:max_threads*times+max_threads]):
+                    thread = threading.Thread(name=f'thread {index} working on line {line}', target=self.find_word_threading, args=[line, self.word, line_counter])
+                    self.threads.append(thread)
+                    self.threads_started_time.append(datetime.datetime.now().time())
+                    thread.start()
+                    line_counter += 1
+                    # if threading.active_count() >= max_threads: 
+                for thread in self.threads:
+                    thread.join()
+                while threading.active_count() != 1:
+                    continue
+                times += 1
+                self.threads = []
+                
         except Exception as e:
             print(e)
-        for index, thread in enumerate(self.threads):
-            print(f'thread.name = {thread.name} and self.threads_started_time[index] = {self.threads_started_time[index]}')
+        # for index, thread in enumerate(self.threads):
+            # print(f'thread.name = {thread.name} and self.threads_started_time[index] = {self.threads_started_time[index]}')
         self.matches = list(filter(None, self.matches))
         for line in self.matches:
             if line: print(f'line = {line.strip()}')
