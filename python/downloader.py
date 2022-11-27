@@ -95,8 +95,18 @@ class Download():
                     os.remove(temp_file_path)
                 except Exception as e:
                     print(e)
-
-
+    
+    def thread_download(self, index, each_size):
+        start_byte = 0 if index == 0 else index * each_size + 1
+        end_byte = index * each_size + each_size if index < self.total_partitions - 1 else each_size * self.total_partitions - 1
+        header = {'Range':f'bytes={int(start_byte)}-{int(end_byte)}'}
+        response = requests.request('GET', self.url, headers=header, stream=True)
+        print(f' Working on chunk {index+1} of {self.total_partitions}')
+        with open(f'../temp_files/python/python_partition_{index}.tmp', '+w', encoding='utf-8') as f:
+            for line in response.iter_content(chunk_size=each_size, decode_unicode=True):
+                f.writelines(line.split('\n'))
+                f.flush()
+        return
 
     def do_threading_divided(self):
         header = {"User-Agent":"Python Downloader"}
@@ -107,34 +117,41 @@ class Download():
         print(f'Download file size is {size} bytes.')
         each_size = int(size / self.total_partitions)
         print(f'Each size is {each_size} bytes.')
+        # f = open('test_temp.txt', '+w', encoding='utf-8')
+        threads = []
         for index in range(self.total_partitions):
-            with open('test_temp.txt', '+w', encoding='utf-8') as f:
-                threads = []
-                start_byte = 0 if index == 0 else index * each_size + 1
-                end_byte = index * each_size + each_size if index < self.total_partitions - 1 else size - 1
-                header = {'Range':f'bytes={int(start_byte)}-{int(end_byte)}'}
+                # start_byte = 0 if index == 0 else index * each_size + 1
+                # end_byte = index * each_size + each_size if index < self.total_partitions - 1 else size - 1
+                # header = {'Range':f'bytes={int(start_byte)}-{int(end_byte)}'}
                 # response = requests.request('GET', self.url, headers=header, stream=True)
                 # print(f' Working on chunk {index+1} of {self.total_partitions}')
-                thread = threading.Thread(name=f'Chunk Downloader Thread {index+1}', target=thread_download, args=(header, index, each_size))
-                thread.start()
-                threads.append(thread)
-            for thread in threads:
-                thread.join()
-                print(thread.name)
+            thread = threading.Thread(name=f'Chunk Downloader Thread {index+1}', target=self.thread_download, args=(index, each_size))
+            thread.start()
+            # thread.run()
+        for thread in threads:
+            thread.join()
+            threads.append(thread)
+        # for thread in threads:
+            print(thread.name)
             # ## Reescrevendo o arquivo para que fique mais legível
-            # start_rewrite = datetime.datetime.now().time()
-            # with open('test_temp.txt', 'r', encoding='utf-8') as ff:
-            #     with open('test.txt', '+w', encoding='utf-8') as fw:
-            #             line = ff.readline()
-            #             while line != '':
-            #                 if line != '' and line != '\n':
-            #                     fw.write(f'{line}')
-            #                     fw.flush()
-            #                 line = ff.readline()
-            # os.remove('test_temp.txt')
-            # finish_rewrite = datetime.datetime.now().time()
-            # print(f'start_rewrite = {start_rewrite}')
-            # print(f'finish_rewrite = {finish_rewrite}')
+        start_rewrite = datetime.datetime.now().time()
+        try:
+            os.remove(self.file_path)
+        except:
+            pass
+        for index in range(self.total_partitions):
+            temp_file = f'../temp_files/python/python_partition_{index}.tmp'
+            with open(temp_file, 'r', encoding='utf-8') as ff:
+                with open(self.file_path, '+a', encoding='utf-8') as fw:
+                        line = ff.readline()
+                        while line != '':
+                            fw.write(f'{line}')
+                            fw.flush()
+                            line = ff.readline()
+            os.remove(temp_file)
+            finish_rewrite = datetime.datetime.now().time()
+            print(f'start_rewrite = {start_rewrite}')
+            print(f'finish_rewrite = {finish_rewrite}')
 
     def do_sequencial_divided(self):
         header = {"User-Agent":"Python Downloader"}
@@ -181,10 +198,3 @@ def thread_write(chunk, to_write):
         to_write.write(f'{line}')
         to_write.flush()
 
-def thread_download(self, header, index, each_size):
-    response = requests.request('GET', self.url, headers=header, stream=True)
-    print(f' Working on chunk {index+1} of {self.total_partitions}')
-    with open(f'../temp_files/python/python_partition_{index}.tmp', '+w', encoding='utf-8') as f:
-        for line in response.iter_content(chunk_size=each_size, decode_unicode=True):
-            f.writelines(line.split('\n'))
-            f.flush()
