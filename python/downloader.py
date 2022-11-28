@@ -3,27 +3,6 @@ import datetime
 import requests
 import time
 import os
-
-def clean_rewrite_file():
-    # Reescrevendo o arquivo para que fique mais legível
-    while True:
-        try:
-            start_rewrite = datetime.datetime.now().time()
-            with open('test_temp.txt', 'r', encoding='utf-8') as ff:
-                with open('test.txt', '+w', encoding='utf-8') as fw:
-                        line = ff.readline()
-                        while line != '':
-                            if line != '' and line != '\n':
-                                fw.write(f'{line}')
-                                fw.flush()
-                            line = ff.readline()
-            os.remove('test_temp.txt')
-            finish_rewrite = datetime.datetime.now().time()
-            print(f'start_rewrite = {start_rewrite}')
-            print(f'finish_rewrite = {finish_rewrite}')
-            return
-        except Exception as e:
-            print(e)
 class Download():
     def __init__(self, url, file_path, total_partitions, file_results_comparator):
         self.url = url
@@ -31,6 +10,15 @@ class Download():
         self.total_partitions = total_partitions
         self.file_results_comparator = file_results_comparator
     
+    def get_elapsed(self, start):
+        print('start', start)
+        finish = datetime.datetime.now().time()
+        t1 = datetime.datetime.strptime(start.strftime("%H:%M:%S"), "%H:%M:%S")
+        print('finish', finish)
+        t2 = datetime.datetime.strptime(finish.strftime("%H:%M:%S"), "%H:%M:%S")
+        elapsed = t2 - t1
+        print('elapsed', elapsed.total_seconds())
+        return finish, elapsed.total_seconds()
 
     def do_sequencial(self, runs):
         for run in range(runs):
@@ -42,21 +30,11 @@ class Download():
             with open(self.file_path, '+wb') as f:
                 f.write(response.content)
                 f.flush()
-            print('start', start)
-            finish = datetime.datetime.now().time()
-            t1 = datetime.datetime.strptime(start.strftime("%H:%M:%S"), "%H:%M:%S")
-            print('finish', finish)
-            t2 = datetime.datetime.strptime(finish.strftime("%H:%M:%S"), "%H:%M:%S")
-            elapsed = t2 - t1
-            print('elapsed', elapsed.total_seconds())
+            finish, elapsed = self.get_elapsed(start)
             self.file_results_comparator.write(f'{runs},{run},sequencial_full,{self.total_partitions},{size},{size},{start},{finish},{elapsed}\n')
 
     def merge_files(self):
         start_rewrite = datetime.datetime.now().time()
-        # try:
-            # os.remove(self.file_path)
-        # except:
-            # pass
         with open(self.file_path, '+wb') as fw:
             for index in range(self.total_partitions):
                 temp_file = f'../temp_files/python/python_partition_{index}.tmp'
@@ -67,6 +45,7 @@ class Download():
         print(f'start_rewrite = {start_rewrite}')
         print(f'finish_rewrite = {finish_rewrite}')
     
+    # Thread function to download partition
     def thread_download_partition(self, index, each_size):
         start_byte = 0 if index == 0 else index * each_size + 1
         end_byte = index * each_size + each_size if index < self.total_partitions - 1 else each_size * self.total_partitions - 1
@@ -100,13 +79,7 @@ class Download():
                 continue
             ## Merging files into final file_path
             self.merge_files()
-            print('start', start)
-            finish = datetime.datetime.now().time()
-            t1 = datetime.datetime.strptime(start.strftime("%H:%M:%S"), "%H:%M:%S")
-            print('finish', finish)
-            t2 = datetime.datetime.strptime(finish.strftime("%H:%M:%S"), "%H:%M:%S")
-            elapsed = t2 - t1
-            print('elapsed', elapsed.total_seconds())
+            finish, elapsed = self.get_elapsed(start)
             self.file_results_comparator.write(f'{runs},{run},threading_divided,{self.total_partitions},{size},{size},{start},{finish},{elapsed}\n')
 
     def do_sequencial_divided(self, runs):
@@ -131,11 +104,5 @@ class Download():
                     f.flush()
             ## Merging files into final file_path
             self.merge_files()
-            print('start', start)
-            finish = datetime.datetime.now().time()
-            t1 = datetime.datetime.strptime(start.strftime("%H:%M:%S"), "%H:%M:%S")
-            print('finish', finish)
-            t2 = datetime.datetime.strptime(finish.strftime("%H:%M:%S"), "%H:%M:%S")
-            elapsed = t2 - t1
-            print('elapsed', elapsed.total_seconds())
+            finish, elapsed = self.get_elapsed(start)
             self.file_results_comparator.write(f'{runs},{run},threading_divided,{self.total_partitions},{size},{size},{start},{finish},{elapsed}\n')
