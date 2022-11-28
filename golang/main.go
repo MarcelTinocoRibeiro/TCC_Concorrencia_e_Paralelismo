@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,31 +36,43 @@ func main() {
 	defer getTimeElapsed(startTime)
 	// readFileSequential("..\\temp_files\\exemplo_maior.txt", "junior")
 	readFileRoutine("..\\temp_files\\exemplo_maior.txt", "junior")
+	// file, err := os.OpenFile("..\\temp_files\\golang\\results_sequencial_video_file.csv", os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.ModePerm)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer file.Close()
+	// writer := bufio.NewWriter(file)
+	// writer.WriteString(fmt.Sprintf("Total runs,Run,Mode,Partitions,Partition size,Total file size,Start time,Finish time,Time elapsed\n"))
 	// var downloadableContentUrlPath, filePath, fileType string
 	// var totalPartitions int
 	// var useConcurrency bool
-	// downloadableContentUrlPath = "https://www.sample-videos.com/csv/Sample-Spreadsheet-500000-rows.csv"
+	// // downloadableContentUrlPath = "https://www.sample-videos.com/csv/Sample-Spreadsheet-500000-rows.csv"
+	// downloadableContentUrlPath = "https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_30mb.mp4"
 	// useConcurrency = false
 	// if useConcurrency {
 	// 	fileType = "concurrent"
 	// } else {
 	// 	fileType = "sequence"
 	// }
-	// filePath = fmt.Sprintf("..\\temp_files\\golang\\free_dummy_data_%v.csv", fileType)
-	// totalPartitions = 30 // care about website server limit
+	// filePath = fmt.Sprintf("..\\temp_files\\golang\\1timevideo_%v.mp4", fileType)
+	// totalPartitions = 1 // care about website server limit
 	// for i := 0; i < 10; i++ {
 	// 	fmt.Println("Run: ", i+1)
-	// 	startTime = time.Now()
+	// 	startTime := time.Now()
 	// 	RunDownload(downloadableContentUrlPath, filePath, totalPartitions, useConcurrency)
-	// 	getTimeElapsed(startTime)
+	// 	finishTime, elapsedTime := getTimeElapsed(startTime)
+	// 	writer.WriteString(fmt.Sprintf("%d,%d,%s,%d,%d,%d,%v,%v,%v\n", 10, i, fileType, totalPartitions, int(6455296/totalPartitions), 6455296, startTime, finishTime, elapsedTime))
+	// 	writer.Flush()
 	// }
 }
 
-func getTimeElapsed(startTime time.Time) float64 {
-	finishTime := time.Since(startTime).Seconds()
-	fmt.Printf("Start Time   = %v:%v:%v\n", startTime.Hour(), startTime.Minute(), startTime.Second())
-	fmt.Println("Finish Time  =", finishTime)
-	return finishTime
+func getTimeElapsed(startTime time.Time) (time.Time, float64) {
+	finishTime := time.Now()
+	elapsedTime := time.Since(startTime).Seconds()
+	fmt.Printf("Start Time    = %v:%v:%v\n", startTime.Hour(), startTime.Minute(), startTime.Second())
+	fmt.Printf("Finish Time   = %v:%v:%v\n", finishTime.Hour(), finishTime.Minute(), finishTime.Second())
+	fmt.Println("Elapsed Time  =", elapsedTime)
+	return finishTime, elapsedTime
 }
 
 func readString(str string, match string) string {
@@ -102,7 +113,7 @@ func readFileRoutine(fileName string, word string) {
 	for scan.Scan() {
 		wg.Add(1)   // Add 1 on WaitGroup for each Goroutine ("for" loop runs count)
 		go func() { // Declaring anonymous goroutine
-			fmt.Println(runtime.NumGoroutine())
+			// fmt.Println(runtime.NumGoroutine())
 			mutex.Lock()
 			line := scan.Text()
 			result := readString(line, word)
@@ -116,7 +127,7 @@ func readFileRoutine(fileName string, word string) {
 		}() // No need to pass parameters if all the work are in the loop
 	}
 	wg.Wait() // To wait all Goroutines to finish
-	defer fmt.Println(lines)
+	// defer fmt.Println(lines)
 }
 
 // Go Downloader
@@ -150,71 +161,6 @@ func (download Download) getNewRequest(method string) (*http.Request, error) {
 	}
 	request.Header.Set("User-Agent", "Go Downloader")
 	return request, nil
-}
-
-// Start the download
-func (download Download) Do(useConcurrency bool) error {
-	fmt.Println("Checking URL")
-	request, err := download.getNewRequest("HEAD")
-	if err != nil {
-		return err
-	}
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Response StatusCode: %v\n", response.StatusCode)
-
-	if response.StatusCode > 299 {
-		return fmt.Errorf("can't process, response is %v", response.StatusCode)
-	}
-
-	size, err := strconv.Atoi(response.Header.Get("Content-Length"))
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Size is %v bytes\n", size)
-
-	var partitions = make([][2]int, download.TotalPartitions)
-	eachSize := size / download.TotalPartitions
-	fmt.Printf("Each size is %v bytes\n", eachSize)
-
-	for index := range partitions {
-		if index == 0 {
-			partitions[index][0] = 0 // starting byte of first partition
-		} else {
-			partitions[index][0] = partitions[index-1][1] + 1 // starting byte of other partitions
-		}
-		if index < download.TotalPartitions-1 {
-			partitions[index][1] = partitions[index][0] + eachSize // ending byte of other partitions
-		} else {
-			partitions[index][1] = size - 1 // ending byte of last partition
-		}
-	}
-	fmt.Println("Partition(s):\n", partitions)
-	switch useConcurrency {
-	case false: // Download each partition sequentially
-		for index, partition := range partitions {
-			err = download.downloadPartition(index, partition)
-			if err != nil {
-				panic(err)
-			}
-		}
-	case true: // Download each partition concurrently
-		var wg sync.WaitGroup
-		for index, partition := range partitions {
-			wg.Add(1)
-			go func(index int, partition [2]int) {
-				defer wg.Done()
-				err = download.downloadPartition(index, partition)
-				if err != nil {
-					panic(err)
-				}
-			}(index, partition)
-		}
-		wg.Wait()
-	}
-	return download.mergeFiles(partitions)
 }
 
 // Download a single partition and save content to a temporary file
@@ -269,4 +215,67 @@ func (download Download) mergeFiles(partitions [][2]int) error {
 	}
 	fmt.Printf("Total of bytes merged: %v\n", totalBytesMerged)
 	return nil
+}
+
+// Start the download
+func (download Download) Do(useConcurrency bool) error {
+	fmt.Println("Checking URL")
+	request, err := download.getNewRequest("HEAD")
+	if err != nil {
+		return err
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Response StatusCode: %v\n", response.StatusCode)
+
+	if response.StatusCode > 299 {
+		return fmt.Errorf("can't process, response is %v", response.StatusCode)
+	}
+	size, err := strconv.Atoi(response.Header.Get("Content-Length"))
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Size is %v bytes\n", size)
+	var partitions = make([][2]int, download.TotalPartitions)
+	eachSize := size / download.TotalPartitions
+	fmt.Printf("Each size is %v bytes\n", eachSize)
+
+	for index := range partitions {
+		if index == 0 {
+			partitions[index][0] = 0 // starting byte of first partition
+		} else {
+			partitions[index][0] = partitions[index-1][1] + 1 // starting byte of other partitions
+		}
+		if index < download.TotalPartitions-1 {
+			partitions[index][1] = partitions[index][0] + eachSize // ending byte of other partitions
+		} else {
+			partitions[index][1] = size - 1 // ending byte of last partition
+		}
+	}
+	fmt.Println("Partition(s):\n", partitions)
+	switch useConcurrency {
+	case false: // Download each partition sequentially
+		for index, partition := range partitions {
+			err = download.downloadPartition(index, partition)
+			if err != nil {
+				panic(err)
+			}
+		}
+	case true: // Download each partition concurrently and/or in parallel
+		var wg sync.WaitGroup
+		for index, partition := range partitions {
+			wg.Add(1)
+			go func(index int, partition [2]int) {
+				defer wg.Done()
+				err = download.downloadPartition(index, partition)
+				if err != nil {
+					panic(err)
+				}
+			}(index, partition)
+		}
+		wg.Wait()
+	}
+	return download.mergeFiles(partitions)
 }
