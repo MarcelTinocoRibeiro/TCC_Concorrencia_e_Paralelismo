@@ -21,6 +21,7 @@ import datetime
 #         # d.do_sequencial_divided(runs)
 #         # d.do_threading_divided(runs)
 
+
 ##### Download #####
 ##### Word Finder #####
 total_runs = 10
@@ -46,7 +47,7 @@ for i in range(10):
             print(f'finish_time = {finish_time}')
             t1 = datetime.datetime.strptime(start_time.strftime("%H:%M:%S"), "%H:%M:%S")
             t2 = datetime.datetime.strptime(finish_time.strftime("%H:%M:%S"), "%H:%M:%S")
-            time_elapsed = (t2 - t1).microseconds
+            time_elapsed = (t2.microsecond - t1.microsecond)
             f.write(f'{total_runs},{run},with {threads_used} threads,{len(lines)},{len(finder.matches)},{start_time},{finish_time},{time_elapsed}\n')
 ##### Word Finder #####
 
