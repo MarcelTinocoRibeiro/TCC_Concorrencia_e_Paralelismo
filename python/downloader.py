@@ -31,7 +31,7 @@ class Download():
                 f.write(response.content)
                 f.flush()
             finish, elapsed = self.get_elapsed(start)
-            self.file_results_comparator.write(f'{runs},{run},sequencial_full,{self.total_partitions},{size},{size},{start},{finish},{elapsed}\n')
+            self.file_results_comparator.write(f'{runs},{run},sequencial_video,{self.total_partitions},{size},{size},{start},{finish},{elapsed}\n')
 
     def merge_files(self):
         start_rewrite = datetime.datetime.now().time()
@@ -80,7 +80,8 @@ class Download():
             ## Merging files into final file_path
             self.merge_files()
             finish, elapsed = self.get_elapsed(start)
-            self.file_results_comparator.write(f'{runs},{run},threading_divided,{self.total_partitions},{size},{size},{start},{finish},{elapsed}\n')
+            self.file_results_comparator.write(f'{runs},{run},threading_text,{self.total_partitions},{size},{size},{start},{finish},{elapsed}\n')
+            self.file_results_comparator.flush()
 
     def do_sequencial_divided(self, runs):
         for run in range(runs):
