@@ -16,38 +16,49 @@ import (
 func main() {
 	startTime := time.Now()
 	defer getTimeElapsed(startTime)
-	// readFileSequential("..\\temp_files\\exemplo_maior.txt", "junior")
-	// readFileRoutine("..\\temp_files\\exemplo_maior.txt", "junior")
+	// file, err := os.OpenFile("..\\temp_files\\golang\\results_word_finder_sequencial.csv", os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.ModePerm)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer file.Close()
+	// totalRuns := 10
+	// writer := bufio.NewWriter(file)
+	// writer.WriteString(fmt.Sprintf("Total runs,Run,Start time,Finish time,Time elapsed\n"))
+	// for run := 0; run < totalRuns; run++ {
+	// 	readFileSequential("..\\temp_files\\exemplo_maior.txt", "junior", writer, run)
 
-	file, err := os.OpenFile("..\\temp_files\\golang\\results_sequencial_text_file.csv", os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.ModePerm)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-	writer := bufio.NewWriter(file)
-	writer.WriteString(fmt.Sprintf("Total runs,Run,Mode,Partitions,Partition size,Total file size,Start time,Finish time,Time elapsed\n"))
-	var downloadableContentUrlPath, filePath, fileType string
-	var totalPartitions int
-	var useConcurrency bool
-	downloadableContentUrlPath = "https://www.sample-videos.com/csv/Sample-Spreadsheet-500000-rows.csv"
-	// downloadableContentUrlPath = "https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_30mb.mp4"
-	useConcurrency = false
-	if useConcurrency {
-		fileType = "concurrent"
-	} else {
-		fileType = "sequence"
-	}
-	filePath = fmt.Sprintf("..\\temp_files\\golang\\text_%v.mp4", fileType)
-	totalPartitions = 1 // care about website server limit
-	runs := 10
-	for i := 0; i < runs; i++ {
-		fmt.Println("Run: ", i+1)
-		startTime := time.Now()
-		RunDownload(downloadableContentUrlPath, filePath, totalPartitions, useConcurrency)
-		finishTime, elapsedTime := getTimeElapsed(startTime)
-		writer.WriteString(fmt.Sprintf("%d,%d,%s,%d,%d,%d,%v,%v,%v\n", runs, i, fileType, totalPartitions, int(31491130/totalPartitions), 31491130, startTime, finishTime, elapsedTime))
-		writer.Flush()
-	}
+	// }
+	readFileGoroutine("..\\temp_files\\exemplo_maior.txt", "junior")
+
+	// file, err := os.OpenFile("..\\temp_files\\golang\\results_sequencial_text_file.csv", os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.ModePerm)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer file.Close()
+	// writer := bufio.NewWriter(file)
+	// writer.WriteString(fmt.Sprintf("Total runs,Run,Mode,Partitions,Partition size,Total file size,Start time,Finish time,Time elapsed\n"))
+	// var downloadableContentUrlPath, filePath, fileType string
+	// var totalPartitions int
+	// var useConcurrency bool
+	// downloadableContentUrlPath = "https://www.sample-videos.com/csv/Sample-Spreadsheet-500000-rows.csv"
+	// // downloadableContentUrlPath = "https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_30mb.mp4"
+	// useConcurrency = false
+	// if useConcurrency {
+	// 	fileType = "concurrent"
+	// } else {
+	// 	fileType = "sequence"
+	// }
+	// filePath = fmt.Sprintf("..\\temp_files\\golang\\text_%v.mp4", fileType)
+	// totalPartitions = 1 // care about website server limit
+	// runs := 10
+	// for i := 0; i < runs; i++ {
+	// 	fmt.Println("Run: ", i+1)
+	// 	startTime := time.Now()
+	// 	RunDownload(downloadableContentUrlPath, filePath, totalPartitions, useConcurrency)
+	// 	finishTime, elapsedTime := getTimeElapsed(startTime)
+	// 	writer.WriteString(fmt.Sprintf("%d,%d,%s,%d,%d,%d,%v,%v,%v\n", runs, i, fileType, totalPartitions, int(31491130/totalPartitions), 31491130, startTime, finishTime, elapsedTime))
+	// 	writer.Flush()
+	// }
 }
 
 func getTimeElapsed(startTime time.Time) (time.Time, float64) {
@@ -68,7 +79,8 @@ func readString(str string, match string) string {
 	return ""
 }
 
-func readFileSequential(fileName string, word string) {
+func readFileSequential(fileName string, word string, writer *bufio.Writer, run int) {
+	startTime := time.Now()
 	fmt.Println("########################## TRY WITHOUT GO ROUTINES ##########################")
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -85,10 +97,13 @@ func readFileSequential(fileName string, word string) {
 			lines = append(lines, line)
 		}
 	}
+	finish, elapsed := getTimeElapsed(startTime)
+	writer.WriteString(fmt.Sprintf("%d,%d,%v,%v,%v\n", 10, run, startTime, finish, elapsed))
+	writer.Flush()
 	// defer fmt.Println(lines)
 }
 
-func readFileRoutine(fileName string, word string) {
+func readFileGoroutine(fileName string, word string) {
 	fmt.Println("########################## TRY WITH GO ROUTINES ##########################")
 	var wg sync.WaitGroup // Added a wait group to keep track of Goroutines
 	var mutex sync.Mutex  // Added a mutex to restrict the multiple access to file content causing error
