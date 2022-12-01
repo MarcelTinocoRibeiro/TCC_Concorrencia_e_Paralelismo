@@ -11,18 +11,7 @@ class WordFinder():
         self.matches = []
 
     def find_word(self, line):
-        if self.word in line:
-            return line
-        return ''
-
-    def find_word_threading(self, line, word, index):
-        # print(f'line = {line.strip()}') # Print apenas para observarmos o comportamento da execução
-        # print(f'index = {index}') # Print apenas para observarmos o comportamento da execução
-        # Ao usarmos Threads em Python, é necessário que
-        # criemos estruturas para armazenarmos o que seria
-        # um retorno da Thread executada
-        if word in line:
-            self.matches.append(line)
+        return line if self.word in line else ''
 
     def set_word(self, word):
         self.word = word
@@ -77,21 +66,3 @@ class WordFinder():
         except Exception as e:
             print(e)
         
-# class CustomThread(threading.Thread):
-#     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
-#         super(CustomThread, self).__init__(group=group, target=target, args=args, name=name)
-#         self.name = name
-#         self.target = target
-#         self.args = args
-#         self.kwargs = kwargs
-#         return
-
-#     def run(self):
-#         try:
-#             if self._target:
-#                 self._target(*self._args, **self._kwargs)
-#         except Exception as e:
-#             print(e)
-
-#     def set_args(self, line, word, thread_counter):
-#         self.args = line, word, thread_counter
